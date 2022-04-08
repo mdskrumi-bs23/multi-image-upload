@@ -8,9 +8,13 @@ function App() {
   const [images, setImages] = useState([]);
   const [compressedImages, setCompressedImages] = useState([]);
 
+  const [size, setSize] = useState({ normal: 0, compressed: 0 });
+
   const compressImage = (file, callback) => {
     new Compressor(file, {
       quality: 0.5,
+      maxWidth: 800,
+      // height will auto reduce keeping the aspect ratio
       success(result) {
         callback(result);
       },
@@ -25,8 +29,10 @@ function App() {
     const len = files.length;
 
     for (let i = 0; i < len; i++) {
+      // Getting Image location meta data
       const location = await exifr.gps(files[i]);
 
+      // Compressing
       compressImage(files[i], function (myCompressedFile) {
         setCompressedImages((prev) => [
           ...prev,
@@ -41,6 +47,12 @@ function App() {
             size: myCompressedFile.size / 1000000, // MB
           },
         ]);
+
+        // Getting total compreesed size
+        setSize((s) => ({
+          normal: s.normal,
+          compressed: s.compressed + myCompressedFile.size,
+        }));
       });
 
       setImages((prev) => [
@@ -53,6 +65,12 @@ function App() {
           size: files[i].size / 1000000, // MB
         },
       ]);
+
+      // Getting total normal size
+      setSize((s) => ({
+        normal: s.normal + files[i].size,
+        compressed: s.compressed,
+      }));
     }
   };
 
@@ -63,6 +81,7 @@ function App() {
       </form>
       <div className="main__container">
         <div className="sub__container">
+          <h2>Total Size: {size.normal / 1000000} MB</h2>
           {images && images.length > 0
             ? images.map((image) => (
                 <div key={image.name}>
@@ -80,6 +99,7 @@ function App() {
         </div>
 
         <div className="sub__container">
+          <h2>Total Size: {size.compressed / 1000000} MB</h2>
           {compressedImages && compressedImages.length > 0
             ? compressedImages.map((image) => (
                 <div key={image.name}>
